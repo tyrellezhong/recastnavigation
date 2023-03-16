@@ -167,6 +167,10 @@ bool dtIntersectSegmentPoly2D(const float* p0, const float* p1,
 	return true;
 }
 
+// 求点pt到线段p->q的最短距离
+// t < 0, p->pt与p->q夹角钝角，最短距离为p->pt
+// t > 1, p->pt长度大于p->q,最短距离为q->pt
+// 0 < t < 1 最短距离为垂线
 float dtDistancePtSegSqr2D(const float* pt, const float* p, const float* q, float& t)
 {
 	float pqx = q[0] - p[0];

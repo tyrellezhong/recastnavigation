@@ -958,6 +958,7 @@ void dtCrowd::checkPathValidity(dtCrowdAgent** agents, const int nagents, const 
 		float agentPos[3];
 		dtPolyRef agentRef = ag->corridor.getFirstPoly();
 		dtVcopy(agentPos, ag->npos);
+		// 路线起点无效，重新规划路线
 		if (!m_navquery->isValidPolyRef(agentRef, &m_filters[ag->params.queryFilterType]))
 		{
 			// Current location is not valid, try to reposition.
@@ -993,6 +994,7 @@ void dtCrowd::checkPathValidity(dtCrowdAgent** agents, const int nagents, const 
 			continue;
 
 		// Try to recover move request position.
+		// 路线终点无效，重新规划路线
 		if (ag->targetState != DT_CROWDAGENT_TARGET_NONE && ag->targetState != DT_CROWDAGENT_TARGET_FAILED)
 		{
 			if (!m_navquery->isValidPolyRef(ag->targetRef, &m_filters[ag->params.queryFilterType]))
@@ -1015,6 +1017,7 @@ void dtCrowd::checkPathValidity(dtCrowdAgent** agents, const int nagents, const 
 		}
 
 		// If nearby corridor is not valid, replan.
+		// 路径起始几个目标点无效，重新规划路线
 		if (!ag->corridor.isValid(CHECK_LOOKAHEAD, m_navquery, &m_filters[ag->params.queryFilterType]))
 		{
 			// Fix current path.
@@ -1061,6 +1064,7 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 	// Optimize path topology.
 	updateTopologyOptimization(agents, nagents, dt);
 	
+	// 将agent加到各自中，方便之后寻找每个agent的nei
 	// Register agents to proximity grid.
 	m_grid->clear();
 	for (int i = 0; i < nagents; ++i)
@@ -1133,7 +1137,8 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 			}
 		}
 	}
-	
+	// 触发navlink这种外部链接
+	// 当前位置在触发半径，则触发，更新ag->pos 
 	// Trigger off-mesh connections (depends on corners).
 	for (int i = 0; i < nagents; ++i)
 	{
@@ -1175,6 +1180,7 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 		}
 	}
 		
+	// 找出ag->devl，即为期望速度
 	// Calculate steering.
 	for (int i = 0; i < nagents; ++i)
 	{
@@ -1208,6 +1214,7 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 			dtVscale(dvel, dvel, ag->desiredSpeed * speedScale);
 		}
 
+		// 调整agent之间间距
 		// Separation
 		if (ag->params.updateFlags & DT_CROWD_SEPARATION)
 		{
@@ -1291,7 +1298,8 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 			int ns = 0;
 
 			const dtObstacleAvoidanceParams* params = &m_obstacleQueryParams[ag->params.obstacleAvoidanceType];
-				
+
+			// 以下两个函数，像周围调整不同的速度方向，选择一个惩罚最小的避障最终速度
 			if (adaptive)
 			{
 				ns = m_obstacleQuery->sampleVelocityAdaptive(ag->npos, ag->params.radius, ag->desiredSpeed,
@@ -1312,6 +1320,7 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 	}
 
 	// Integrate.
+	// 根据ag->nvel(当前一帧算出的避障后的速度)，更新ag->vel,ag-pos
 	for (int i = 0; i < nagents; ++i)
 	{
 		dtCrowdAgent* ag = agents[i];
@@ -1321,6 +1330,7 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 	}
 	
 	// Handle collisions.
+	// 判断位移后的ag->npos 与ag->nneis->npos 是否重叠，重叠则增加位置偏移
 	static const float COLLISION_RESOLVE_FACTOR = 0.7f;
 	
 	for (int iter = 0; iter < 4; ++iter)
@@ -1387,6 +1397,7 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 		}
 	}
 	
+	// 模拟到达的下个点，映射到Navmesh表面
 	for (int i = 0; i < nagents; ++i)
 	{
 		dtCrowdAgent* ag = agents[i];
