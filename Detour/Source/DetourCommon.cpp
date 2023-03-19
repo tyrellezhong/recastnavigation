@@ -128,6 +128,7 @@ bool dtIntersectSegmentPoly2D(const float* p0, const float* p1,
 		dtVsub(edge, &verts[i*3], &verts[j*3]);
 		dtVsub(diff, p0, &verts[j*3]);
 		const float n = dtVperp2D(edge, diff);
+		// 理解为在边法线方向上的投影
 		const float d = dtVperp2D(dir, edge);
 		if (fabsf(d) < EPS)
 		{

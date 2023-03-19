@@ -113,6 +113,7 @@ void dtProximityGrid::addItem(const unsigned short id,
 	m_bounds[2] = dtMax(m_bounds[2], imaxx);
 	m_bounds[3] = dtMax(m_bounds[3], imaxy);
 	
+	// 一个ag的自身半径范围会占用多个格子
 	for (int y = iminy; y <= imaxy; ++y)
 	{
 		for (int x = iminx; x <= imaxx; ++x)

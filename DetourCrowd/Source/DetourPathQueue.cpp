@@ -80,6 +80,7 @@ void dtPathQueue::update(const int maxIters)
 
 	// Update path request until there is nothing to update
 	// or upto maxIters pathfinder iterations has been consumed.
+	// 队列中所有要巡逻的请求，共享这个迭代次数
 	int iterCount = maxIters;
 	
 	for (int i = 0; i < MAX_QUEUE; ++i)

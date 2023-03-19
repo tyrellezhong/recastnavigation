@@ -107,6 +107,7 @@ int dtMergeCorridorEndMoved(dtPolyRef* path, const int npath, const int maxPath,
 	return ppos+count;
 }
 
+// 把新的路径合并在原来的路径之前，从最远的重合点开始，往前替换
 int dtMergeCorridorStartShortcut(dtPolyRef* path, const int npath, const int maxPath,
 								 const dtPolyRef* visited, const int nvisited)
 {

@@ -1276,7 +1276,8 @@ dtStatus dtNavMeshQuery::initSlicedFindPath(dtPolyRef startRef, dtPolyRef endRef
 	
 	return m_query.status;
 }
-	
+
+// 更新切片寻路，循环到达最大次数，直接返回（可能找的是部分路径)
 dtStatus dtNavMeshQuery::updateSlicedFindPath(const int maxIter, int* doneIters)
 {
 	if (!dtStatusInProgress(m_query.status))
@@ -1528,7 +1529,8 @@ dtStatus dtNavMeshQuery::finalizeSlicedFindPath(dtPolyRef* path, int* pathCount,
 		
 		dtNode* prev = 0;
 		dtNode* node = m_query.lastBestNode;
-		int prevRay = 0;
+		int prevRay = 0;   
+		// 链表方向反向
 		do
 		{
 			dtNode* next = m_nodePool->getNodeAtIdx(node->pidx);
@@ -2668,6 +2670,7 @@ dtStatus dtNavMeshQuery::raycast(dtPolyRef startRef, const float* startPos, cons
 			hit->hitNormal[0] = dz;
 			hit->hitNormal[1] = 0;
 			hit->hitNormal[2] = -dx;
+			// 这里返回边的方向？
 			dtVnormalize(hit->hitNormal);
 			
 			hit->pathCount = n;

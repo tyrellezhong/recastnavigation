@@ -256,6 +256,7 @@ static int addToOptQueue(dtCrowdAgent* newag, dtCrowdAgent** agents, const int n
 static int addToPathQueue(dtCrowdAgent* newag, dtCrowdAgent** agents, const int nagents, const int maxAgents)
 {
 	// Insert neighbour based on greatest time.
+	// 插入排序，从大到小
 	int slot = 0;
 	if (!nagents)
 	{
@@ -691,6 +692,7 @@ void dtCrowd::updateMoveRequest(const float /*dt*/)
 		if (ag->targetState == DT_CROWDAGENT_TARGET_NONE || ag->targetState == DT_CROWDAGENT_TARGET_VELOCITY)
 			continue;
 
+		// 请求寻路状态，找路径
 		if (ag->targetState == DT_CROWDAGENT_TARGET_REQUESTING)
 		{
 			const dtPolyRef* path = ag->corridor.getPath();
@@ -709,6 +711,7 @@ void dtCrowd::updateMoveRequest(const float /*dt*/)
 			dtStatus status = 0;
 			if (ag->targetReplan) // && npath > 10)
 			{
+				// 疑问？ 还要用原来的最远路径点，原来路径是否已经失效
 				// Try to use existing steady path during replan if possible.
 				status = m_navquery->finalizeSlicedFindPathPartial(path, npath, reqPath, &reqPathCount, MAX_RES);
 			}
@@ -723,7 +726,8 @@ void dtCrowd::updateMoveRequest(const float /*dt*/)
 				// In progress or succeed.
 				if (reqPath[reqPathCount-1] != ag->targetRef)
 				{
-					// Partial path, constrain target position inside the last polygon.
+					// 终点不一样，修正路径为映射的路径终点
+					// Partial path, constrain target position inside the last polygon.  
 					status = m_navquery->closestPointOnPoly(reqPath[reqPathCount-1], ag->targetPos, reqPos, 0);
 					if (dtStatusFailed(status))
 						reqPathCount = 0;
@@ -745,7 +749,7 @@ void dtCrowd::updateMoveRequest(const float /*dt*/)
 				reqPath[0] = path[0];
 				reqPathCount = 1;
 			}
-
+			// 存储路径，以及路径的终点
 			ag->corridor.setCorridor(reqPos, reqPath, reqPathCount);
 			ag->boundary.reset();
 			ag->partial = false;
@@ -757,11 +761,13 @@ void dtCrowd::updateMoveRequest(const float /*dt*/)
 			}
 			else
 			{
+				// 路径没有找到最终点，加入队列，继续找
 				// The path is longer or potentially unreachable, full plan.
 				ag->targetState = DT_CROWDAGENT_TARGET_WAITING_FOR_QUEUE;
 			}
 		}
 		
+		// 加入队列
 		if (ag->targetState == DT_CROWDAGENT_TARGET_WAITING_FOR_QUEUE)
 		{
 			nqueue = addToPathQueue(ag, queue, nqueue, PATH_MAX_AGENTS);
@@ -773,17 +779,19 @@ void dtCrowd::updateMoveRequest(const float /*dt*/)
 		dtCrowdAgent* ag = queue[i];
 		ag->targetPathqRef = m_pathq.request(ag->corridor.getLastPoly(), ag->targetRef,
 											 ag->corridor.getTarget(), ag->targetPos, &m_filters[ag->params.queryFilterType]);
-		if (ag->targetPathqRef != DT_PATHQ_INVALID)
+		if (ag->targetPathqRef != DT_PATHQ_INVALID) // 成功添加寻路队列的，改为等待寻路
 			ag->targetState = DT_CROWDAGENT_TARGET_WAITING_FOR_PATH;
 	}
 
 	
 	// Update requests.
+	// 队列中挨个寻路
 	m_pathq.update(MAX_ITERS_PER_UPDATE);
 
 	dtStatus status;
 
 	// Process path results.
+	// 队列中寻路结果加到上面已经寻到的路径后面
 	for (int i = 0; i < m_maxAgents; ++i)
 	{
 		dtCrowdAgent* ag = &m_agents[i];
@@ -1027,6 +1035,7 @@ void dtCrowd::checkPathValidity(dtCrowdAgent** agents, const int nagents, const 
 		}
 		
 		// If the end of the path is near and it is not the requested location, replan.
+		// 终点不一致，重新规划路线
 		if (ag->targetState == DT_CROWDAGENT_TARGET_VALID)
 		{
 			if (ag->targetReplanTime > TARGET_REPLAN_DELAY &&
@@ -1036,6 +1045,7 @@ void dtCrowd::checkPathValidity(dtCrowdAgent** agents, const int nagents, const 
 		}
 
 		// Try to replan path to goal.
+		// 将相关状态置为重新规划路线状态
 		if (replan)
 		{
 			if (ag->targetState != DT_CROWDAGENT_TARGET_NONE)
@@ -1064,7 +1074,7 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 	// Optimize path topology.
 	updateTopologyOptimization(agents, nagents, dt);
 	
-	// 将agent加到各自中，方便之后寻找每个agent的nei
+	// 将agent加到格子中，方便之后寻找每个agent的nei
 	// Register agents to proximity grid.
 	m_grid->clear();
 	for (int i = 0; i < nagents; ++i)
@@ -1084,6 +1094,7 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 
 		// Update the collision boundary after certain distance has been passed or
 		// if it has become invalid.
+		// 更新ag周围的障碍物（墙体）边界信息
 		const float updateThr = ag->params.collisionQueryRange*0.25f;
 		if (dtVdist2DSqr(ag->npos, ag->boundary.getCenter()) > dtSqr(updateThr) ||
 			!ag->boundary.isValid(m_navquery, &m_filters[ag->params.queryFilterType]))
@@ -1092,6 +1103,7 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 								m_navquery, &m_filters[ag->params.queryFilterType]);
 		}
 		// Query neighbour agents
+		// 更新ag的邻居信息
 		ag->nneis = getNeighbours(ag->npos, ag->params.height, ag->params.collisionQueryRange,
 								  ag, ag->neis, DT_CROWDAGENT_MAX_NEIGHBOURS,
 								  agents, nagents, m_grid);
