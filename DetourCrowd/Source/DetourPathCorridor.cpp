@@ -401,7 +401,8 @@ bool dtPathCorridor::moveOverOffmeshConnection(dtPolyRef offMeshConRef, dtPolyRe
 		return false;
 	}
 	
-	// Prune path
+	// Prune path  
+	// 裁剪路径，navlink之前的路径去掉
 	for (int i = npos; i < m_npath; ++i)
 		m_path[i-npos] = m_path[i];
 	m_npath -= npos;
@@ -412,9 +413,11 @@ bool dtPathCorridor::moveOverOffmeshConnection(dtPolyRef offMeshConRef, dtPolyRe
 	const dtNavMesh* nav = navquery->getAttachedNavMesh();
 	dtAssert(nav);
 
+	// 获得navlink的EndPoint
 	dtStatus status = nav->getOffMeshConnectionPolyEndPoints(refs[0], refs[1], startPos, endPos);
 	if (dtStatusSucceed(status))
 	{
+		// 路径起点调整到navlink终点
 		dtVcopy(m_pos, endPos);
 		return true;
 	}

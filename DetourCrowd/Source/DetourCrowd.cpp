@@ -1170,6 +1170,7 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 			dtCrowdAgentAnimation* anim = &m_agentAnims[idx];
 			
 			// Adjust the path over the off-mesh connection.
+			// 将路径的起点调整到navlink的终点
 			dtPolyRef refs[2];
 			if (ag->corridor.moveOverOffmeshConnection(ag->cornerPolys[ag->ncorners-1], refs,
 													   anim->startPos, anim->endPos, m_navquery))
@@ -1293,6 +1294,7 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 			}
 
 			// Append neighbour segments as obstacles.
+			// 应该只加入了自己周围的障碍物？
 			for (int j = 0; j < ag->boundary.getSegmentCount(); ++j)
 			{
 				const float* s = ag->boundary.getSegment(j);
