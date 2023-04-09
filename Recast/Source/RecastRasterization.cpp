@@ -57,7 +57,7 @@ static rcSpan* allocSpan(rcHeightfield& hf)
 
 		// Add the pool into the list of pools.
 		spanPool->next = hf.pools;
-		hf.pools = spanPool;
+		hf.pools = spanPool; // 链表加到开头
 		
 		// Add new spans to the free list.
 		rcSpan* freeList = hf.freelist;
@@ -119,20 +119,20 @@ static bool addSpan(rcHeightfield& hf,
 	newSpan->area = areaID;
 	newSpan->next = NULL;
 	
-	const int columnIndex = x + z * hf.width;
+	const int columnIndex = x + z * hf.width; // 格子索引换算成高度场索引
 	rcSpan* previousSpan = NULL;
 	rcSpan* currentSpan = hf.spans[columnIndex];
 	
 	// Insert the new span, possibly merging it with existing spans.
 	while (currentSpan != NULL)
 	{
-		if (currentSpan->smin > newSpan->smax)
+		if (currentSpan->smin > newSpan->smax) // 新span在current下面，不用管
 		{
 			// Current span is completely after the new span, break.
 			break;
 		}
 		
-		if (currentSpan->smax < newSpan->smin)
+		if (currentSpan->smax < newSpan->smin) // 新span在current上面，找到current的next
 		{
 			// Current span is completely before the new span.  Keep going.
 			previousSpan = currentSpan;
@@ -140,7 +140,7 @@ static bool addSpan(rcHeightfield& hf,
 		}
 		else
 		{
-			// The new span overlaps with an existing span.  Merge them.
+			// The new span overlaps with an existing span.  Merge them. // 两者交叉，找到更广的边界
 			if (currentSpan->smin < newSpan->smin)
 			{
 				newSpan->smin = currentSpan->smin;
@@ -150,7 +150,7 @@ static bool addSpan(rcHeightfield& hf,
 				newSpan->smax = currentSpan->smax;
 			}
 			
-			// Merge flags.
+			// Merge flags. 上边界小于flagMergeThreshold，合并flag
 			if (rcAbs((int)newSpan->smax - (int)currentSpan->smax) <= flagMergeThreshold)
 			{
 				// Higher area ID numbers indicate higher resolution priority.
@@ -160,7 +160,7 @@ static bool addSpan(rcHeightfield& hf,
 			// Remove the current span since it's now merged with newSpan.
 			// Keep going because there might be other overlapping spans that also need to be merged.
 			rcSpan* next = currentSpan->next;
-			freeSpan(hf, currentSpan);
+			freeSpan(hf, currentSpan); // 合并后释放空闲，并把链表连接上
 			if (previousSpan)
 			{
 				previousSpan->next = next;
@@ -182,7 +182,7 @@ static bool addSpan(rcHeightfield& hf,
 	else
 	{
 		// This span should go before the others in the list
-		newSpan->next = hf.spans[columnIndex];
+		newSpan->next = hf.spans[columnIndex]; // 同一个位置（x，z），next排列从下到上，也就是上表面越来越高
 		hf.spans[columnIndex] = newSpan;
 	}
 
@@ -234,7 +234,7 @@ static void dividePoly(const float* inVerts, int inVertsCount,
 	float inVertAxisDelta[12];
 	for (int inVert = 0; inVert < inVertsCount; ++inVert)
 	{
-		inVertAxisDelta[inVert] = axisOffset - inVerts[inVert * 3 + axis];
+		inVertAxisDelta[inVert] = axisOffset - inVerts[inVert * 3 + axis]; //对应的坐标系频移减去地点，>0表示顶点在下面或者左边
 	}
 
 	int poly1Vert = 0;
@@ -243,9 +243,11 @@ static void dividePoly(const float* inVerts, int inVertsCount,
 	{
 		// If the two vertices are on the same side of the separating axis
 		bool sameSide = (inVertAxisDelta[inVertA] >= 0) == (inVertAxisDelta[inVertB] >= 0);
-
+		
+		// 不在同一侧，计算交点
 		if (!sameSide)
 		{
+			// 按比例计算交点
 			float s = inVertAxisDelta[inVertB] / (inVertAxisDelta[inVertB] - inVertAxisDelta[inVertA]);
 			outVerts1[poly1Vert * 3 + 0] = inVerts[inVertB * 3 + 0] + (inVerts[inVertA * 3 + 0] - inVerts[inVertB * 3 + 0]) * s;
 			outVerts1[poly1Vert * 3 + 1] = inVerts[inVertB * 3 + 1] + (inVerts[inVertA * 3 + 1] - inVerts[inVertB * 3 + 1]) * s;
@@ -254,8 +256,9 @@ static void dividePoly(const float* inVerts, int inVertsCount,
 			poly1Vert++;
 			poly2Vert++;
 			
-			// add the inVertA point to the right polygon. Do NOT add points that are on the dividing line
+			// add the inVertA point to the right （正确的）polygon. Do NOT add points that are on the dividing line
 			// since these were already added above
+			// 假设坐标系为水平向右为x轴，水平向上为z轴（|---->)则此顶点加入下面多边形或者左边多边形
 			if (inVertAxisDelta[inVertA] > 0)
 			{
 				rcVcopy(&outVerts1[poly1Vert * 3], &inVerts[inVertA * 3]);
@@ -269,7 +272,7 @@ static void dividePoly(const float* inVerts, int inVertsCount,
 		}
 		else
 		{
-			// add the inVertA point to the right polygon. Addition is done even for points on the dividing line
+			// add the inVertA point to the right （正确的）polygon. Addition is done even for points on the dividing line
 			if (inVertAxisDelta[inVertA] >= 0)
 			{
 				rcVcopy(&outVerts1[poly1Vert * 3], &inVerts[inVertA * 3]);
@@ -279,6 +282,7 @@ static void dividePoly(const float* inVerts, int inVertsCount,
 					continue;
 				}
 			}
+			// 顶点在轴上，两边的多边形都要添加这个顶点
 			rcVcopy(&outVerts2[poly2Vert * 3], &inVerts[inVertA * 3]);
 			poly2Vert++;
 		}
@@ -352,12 +356,14 @@ static bool rasterizeTri(const float* v0, const float* v1, const float* v2,
 	int nvRow;
 	int nvIn = 3;
 
+	//以z轴为固定坐标先切割
 	for (int z = z0; z <= z1; ++z)
 	{
 		// Clip polygon to row. Store the remaining polygon as well
 		const float cellZ = hfBBMin[2] + (float)z * cellSize;
+		//返回的polygon 1已经在对应z轴被切割，polygon 2还需要继续被切割
 		dividePoly(in, nvIn, inRow, &nvRow, p1, &nvIn, cellZ + cellSize, RC_AXIS_Z);
-		rcSwap(in, p1);
+		rcSwap(in, p1); // 交换返回的polygon 2到in，继续在Z轴切割polygon 2
 		
 		if (nvRow < 3)
 		{
@@ -393,7 +399,7 @@ static bool rasterizeTri(const float* v0, const float* v1, const float* v2,
 
 		int nv;
 		int nv2 = nvRow;
-
+		//以X轴为固定坐标切割,切完后就会形成以ceil*ceil为区域的格子
 		for (int x = x0; x <= x1; ++x)
 		{
 			// Clip polygon to column. store the remaining polygon as well
@@ -440,7 +446,7 @@ static bool rasterizeTri(const float* v0, const float* v1, const float* v2,
 			{
 				spanMax = by;
 			}
-
+			//找到格子中y轴上ploy的上下box边界，换算成以ceil为单位的index大小，加入高度场，hfBBMin边界索引为0
 			// Snap the span to the heightfield height grid.
 			unsigned short spanMinCellIndex = (unsigned short)rcClamp((int)floorf(spanMin * inverseCellHeight), 0, RC_SPAN_MAX_HEIGHT);
 			unsigned short spanMaxCellIndex = (unsigned short)rcClamp((int)ceilf(spanMax * inverseCellHeight), (int)spanMinCellIndex + 1, RC_SPAN_MAX_HEIGHT);

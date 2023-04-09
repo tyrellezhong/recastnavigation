@@ -246,6 +246,7 @@ struct rcConfig
 	/// be considered walkable. [Limit: >= 3] [Units: vx] 
 	int walkableHeight;
 	
+	// span 的上边界小于这个值，就合并为同一个span
 	/// Maximum ledge height that is considered to still be traversable. [Limit: >=0] [Units: vx] 
 	int walkableClimb;
 	
