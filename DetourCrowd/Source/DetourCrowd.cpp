@@ -1214,6 +1214,7 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 		else
 		{
 			// Calculate steering direction.
+			// 开启预测转向，会以第一个和第二个拐点共同计算方向，方向会是外围方向，相当于车在180度拐弯，在外围一样
 			if (ag->params.updateFlags & DT_CROWD_ANTICIPATE_TURNS)
 				calcSmoothSteerDirection(ag, dvel);
 			else
@@ -1411,7 +1412,7 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 		}
 	}
 	
-	// 模拟到达的下个点，映射到Navmesh表面
+	// 将corridor路径的起点更新到新的ag->pos上，沿着navmesh表面，并更新corridor路径
 	for (int i = 0; i < nagents; ++i)
 	{
 		dtCrowdAgent* ag = agents[i];

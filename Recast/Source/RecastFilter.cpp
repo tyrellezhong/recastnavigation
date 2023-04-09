@@ -41,6 +41,7 @@ void rcFilterLowHangingWalkableObstacles(rcContext* context, const int walkableC
 			for (rcSpan* span = heightfield.spans[x + z * xSize]; span != NULL; previousSpan = span, span = span->next)
 			{
 				const bool walkable = span->area != RC_NULL_AREA;
+				// 如果当前跨度不可行走，但其正下方有可行走跨度，则将其上方的跨度标记为可行走。
 				// If current span is not walkable, but there is walkable
 				// span just below it, mark the span above it walkable too.
 				if (!walkable && previousWasWalkable)
@@ -137,12 +138,14 @@ void rcFilterLedgeSpans(rcContext* context, const int walkableHeight, const int 
 					}
 				}
 
+				// 与周围四方向任何一个span的攀爬高度大于walkableClimb，则不可走
 				// The current span is close to a ledge if the drop to any
 				// neighbour span is less than the walkableClimb.
 				if (minNeighborHeight < -walkableClimb)
 				{
 					span->area = RC_NULL_AREA;
 				}
+				// 周围span差异，攀爬高度大于walkableClimb，位于斜坡，则不可走
 				// If the difference between all neighbours is too large,
 				// we are at steep slope, mark the span as ledge.
 				else if ((accessibleNeighborMaxHeight - accessibleNeighborMinHeight) > walkableClimb)
@@ -174,7 +177,7 @@ void rcFilterWalkableLowHeightSpans(rcContext* context, const int walkableHeight
 			{
 				const int bot = (int)(span->smax);
 				const int top = span->next ? (int)(span->next->smin) : MAX_HEIGHT;
-				if ((top - bot) <= walkableHeight)
+				if ((top - bot) <= walkableHeight)  // 下面span与上面span之间高度<walkableHeight, 不可走
 				{
 					span->area = RC_NULL_AREA;
 				}

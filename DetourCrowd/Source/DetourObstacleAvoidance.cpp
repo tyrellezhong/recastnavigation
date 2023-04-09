@@ -546,9 +546,10 @@ int dtObstacleAvoidanceQuery::sampleVelocityAdaptive(const float* pos, const flo
 	pat[npat*2+1] = 0;
 	npat++;
 	
-	for (int j = 0; j < nr; ++j)
+	// 生成的速度方向，每da旋转一次，最终绕着360度旋转一圈
+	for (int j = 0; j < nr; ++j)  // 采样圈数，
 	{
-		const float r = (float)(nr-j)/(float)nr;
+		const float r = (float)(nr-j)/(float)nr;  // 控制圈的半径，从外到里
 		pat[npat*2+0] = ddir[(j%2)*3] * r;
 		pat[npat*2+1] = ddir[(j%2)*3+2] * r;
 		float* last1 = pat + npat*2;
@@ -557,10 +558,10 @@ int dtObstacleAvoidanceQuery::sampleVelocityAdaptive(const float* pos, const flo
 
 		for (int i = 1; i < nd-1; i+=2)
 		{
-			// get next point on the "right" (rotate CW)
-			pat[npat*2+0] = last1[0]*ca + last1[1]*sa;
+			// get next point on the "right" (rotate CW)  向右旋转da度（顺时针）
+			pat[npat*2+0] = last1[0]*ca + last1[1]*sa; 
 			pat[npat*2+1] = -last1[0]*sa + last1[1]*ca;
-			// get next point on the "left" (rotate CCW)
+			// get next point on the "left" (rotate CCW)  向左旋转da度（逆时针）
 			pat[npat*2+2] = last2[0]*ca - last2[1]*sa;
 			pat[npat*2+3] = last2[0]*sa + last2[1]*ca;
 
@@ -569,7 +570,7 @@ int dtObstacleAvoidanceQuery::sampleVelocityAdaptive(const float* pos, const flo
 			npat += 2;
 		}
 
-		if ((nd&1) == 0)
+		if ((nd&1) == 0) // 多余的一次向左旋转，
 		{
 			pat[npat*2+2] = last2[0]*ca - last2[1]*sa;
 			pat[npat*2+3] = last2[0]*sa + last2[1]*ca;
@@ -593,11 +594,11 @@ int dtObstacleAvoidanceQuery::sampleVelocityAdaptive(const float* pos, const flo
 		for (int i = 0; i < npat; ++i)
 		{
 			float vcand[3];
-			vcand[0] = res[0] + pat[i*2+0]*cr;
+			vcand[0] = res[0] + pat[i*2+0]*cr; // 原有部分速度加上采样矢量
 			vcand[1] = 0;
 			vcand[2] = res[2] + pat[i*2+1]*cr;
 			
-			if (dtSqr(vcand[0])+dtSqr(vcand[2]) > dtSqr(vmax+0.001f)) continue;
+			if (dtSqr(vcand[0])+dtSqr(vcand[2]) > dtSqr(vmax+0.001f)) continue;  // 采样速度大于最大速度，丢弃
 			
 			const float penalty = processSample(vcand,cr/10, pos,rad,vel,dvel, minPenalty, debug);
 			ns++;
@@ -610,7 +611,7 @@ int dtObstacleAvoidanceQuery::sampleVelocityAdaptive(const float* pos, const flo
 
 		dtVcopy(res, bvel);
 
-		cr *= 0.5f;
+		cr *= 0.5f; // 减少增量
 	}	
 	
 	dtVcopy(nvel, res);

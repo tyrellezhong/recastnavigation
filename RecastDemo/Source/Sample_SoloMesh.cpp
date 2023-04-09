@@ -385,7 +385,7 @@ bool Sample_SoloMesh::handleBuild()
 	const int ntris = m_geom->getMesh()->getTriCount();
 	
 	//
-	// Step 1. Initialize build config.
+	// Step 1. Initialize build config. 配置参数
 	//
 	
 	// Init build configuration from GUI
@@ -422,7 +422,7 @@ bool Sample_SoloMesh::handleBuild()
 	m_ctx->log(RC_LOG_PROGRESS, " - %.1fK verts, %.1fK tris", nverts/1000.0f, ntris/1000.0f);
 	
 	//
-	// Step 2. Rasterize input polygon soup.
+	// Step 2. Rasterize input polygon soup. 光栅化
 	//
 	
 	// Allocate voxel heightfield where we rasterize our input data to.
@@ -453,7 +453,7 @@ bool Sample_SoloMesh::handleBuild()
 	// the are type for each of the meshes and rasterize them.
 	memset(m_triareas, 0, ntris*sizeof(unsigned char));
 	rcMarkWalkableTriangles(m_ctx, m_cfg.walkableSlopeAngle, verts, nverts, tris, ntris, m_triareas);
-	if (!rcRasterizeTriangles(m_ctx, verts, nverts, tris, m_triareas, ntris, *m_solid, m_cfg.walkableClimb))
+	if (!rcRasterizeTriangles(m_ctx, verts, nverts, tris, m_triareas, ntris, *m_solid, m_cfg.walkableClimb)) // 光栅化三角形，高度场生成
 	{
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not rasterize triangles.");
 		return false;
@@ -466,7 +466,7 @@ bool Sample_SoloMesh::handleBuild()
 	}
 	
 	//
-	// Step 3. Filter walkables surfaces.
+	// Step 3. Filter walkables surfaces. 可行走span修正
 	//
 	
 	// Once all geoemtry is rasterized, we do initial pass of filtering to

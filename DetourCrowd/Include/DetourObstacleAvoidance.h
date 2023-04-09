@@ -82,16 +82,16 @@ static const int DT_MAX_PATTERN_RINGS = 4;	///< Max number of adaptive rings.
 
 struct dtObstacleAvoidanceParams
 {
-	float velBias;
+	float velBias; // 采样时，基本因子
 	float weightDesVel;
 	float weightCurVel;
 	float weightSide;
 	float weightToi;
 	float horizTime;
 	unsigned char gridSize;	///< grid
-	unsigned char adaptiveDivs;	///< adaptive
-	unsigned char adaptiveRings;	///< adaptive
-	unsigned char adaptiveDepth;	///< adaptive
+	unsigned char adaptiveDivs;	///< adaptive 采样角度360 / adaptiveDivs
+	unsigned char adaptiveRings;	///< adaptive 采样多少圈
+	unsigned char adaptiveDepth;	///< adaptive 循环深度
 };
 
 class dtObstacleAvoidanceQuery
@@ -140,7 +140,7 @@ private:
 
 	dtObstacleAvoidanceParams m_params;
 	float m_invHorizTime;
-	float m_vmax;
+	float m_vmax; // agent 最大速率
 	float m_invVmax;
 
 	int m_maxCircles;

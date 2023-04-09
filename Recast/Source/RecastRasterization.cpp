@@ -493,7 +493,7 @@ bool rcRasterizeTriangles(rcContext* context,
 	// Rasterize the triangles.
 	const float inverseCellSize = 1.0f / heightfield.cs;
 	const float inverseCellHeight = 1.0f / heightfield.ch;
-	for (int triIndex = 0; triIndex < numTris; ++triIndex)
+	for (int triIndex = 0; triIndex < numTris; ++triIndex) // 三角形，挨个光栅化
 	{
 		const float* v0 = &verts[tris[triIndex * 3 + 0] * 3];
 		const float* v1 = &verts[tris[triIndex * 3 + 1] * 3];

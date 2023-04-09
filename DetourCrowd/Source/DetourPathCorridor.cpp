@@ -23,7 +23,7 @@
 #include "DetourAssert.h"
 #include "DetourAlloc.h"
 
-
+// 从最远重合点开始往前丢弃，并把之后不重合的ploy倒叙接到原来corridor之前
 int dtMergeCorridorStartMoved(dtPolyRef* path, const int npath, const int maxPath,
 							  const dtPolyRef* visited, const int nvisited)
 {
@@ -59,10 +59,10 @@ int dtMergeCorridorStartMoved(dtPolyRef* path, const int npath, const int maxPat
 	int size = dtMax(0, npath-orig);
 	if (req+size > maxPath)
 		size = maxPath-req;
-	if (size)
+	if (size) // 远corridor从最远重合的ploy开始丢弃，表示已经走过
 		memmove(path+req, path+orig, size*sizeof(dtPolyRef));
 	
-	// Store visited
+	// Store visited 移动到的点的ploy为起点，倒序
 	for (int i = 0; i < req; ++i)
 		path[i] = visited[(nvisited-1)-i];				
 	
@@ -402,7 +402,7 @@ bool dtPathCorridor::moveOverOffmeshConnection(dtPolyRef offMeshConRef, dtPolyRe
 	}
 	
 	// Prune path  
-	// 裁剪路径，navlink之前的路径去掉
+	// 裁剪路径，navlink之前的路径去掉,包括navlink ploy
 	for (int i = npos; i < m_npath; ++i)
 		m_path[i-npos] = m_path[i];
 	m_npath -= npos;

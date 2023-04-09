@@ -106,7 +106,7 @@ void dtClosestPtPointTriangle(float* closest, const float* p,
 	closest[1] = a[1] + ab[1] * v + ac[1] * w;
 	closest[2] = a[2] + ab[2] * v + ac[2] * w;
 }
-
+// 计算向量与凸多边形的交点
 bool dtIntersectSegmentPoly2D(const float* p0, const float* p1,
 							  const float* verts, int nverts,
 							  float& tmin, float& tmax,
