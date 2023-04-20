@@ -391,7 +391,7 @@ int rcGetHeightFieldSpanCount(rcContext* context, const rcHeightfield& heightfie
 	{
 		for (rcSpan* span = heightfield.spans[columnIndex]; span != NULL; span = span->next)
 		{
-			if (span->area != RC_NULL_AREA)
+			if (span->area != RC_NULL_AREA)  // 只计算可走的span
 			{
 				spanCount++;
 			}
@@ -411,7 +411,7 @@ bool rcBuildCompactHeightfield(rcContext* context, const int walkableHeight, con
 	const int zSize = heightfield.height;
 	const int spanCount = rcGetHeightFieldSpanCount(context, heightfield);
 
-	// Fill in header.
+	// Fill in header. 值初始化
 	compactHeightfield.width = xSize;
 	compactHeightfield.height = zSize;
 	compactHeightfield.spanCount = spanCount;
@@ -460,18 +460,18 @@ bool rcBuildCompactHeightfield(rcContext* context, const int walkableHeight, con
 			continue;
 		}
 			
-		rcCompactCell& cell = compactHeightfield.cells[columnIndex];
+		rcCompactCell& cell = compactHeightfield.cells[columnIndex];   // columnIndex 找到cell，cell记录空心span起始索引和数量
 		cell.index = currentCellIndex;
 		cell.count = 0;
-
+		//找到所有空心span
 		for (; span != NULL; span = span->next)
 		{
 			if (span->area != RC_NULL_AREA)
 			{
-				const int bot = (int)span->smax;
-				const int top = span->next ? (int)span->next->smin : MAX_HEIGHT;
-				compactHeightfield.spans[currentCellIndex].y = (unsigned short)rcClamp(bot, 0, 0xffff);
-				compactHeightfield.spans[currentCellIndex].h = (unsigned char)rcClamp(top - bot, 0, 0xff);
+				const int bot = (int)span->smax; // 实心span上表面
+				const int top = span->next ? (int)span->next->smin : MAX_HEIGHT; // 上一个实心span下表面
+				compactHeightfield.spans[currentCellIndex].y = (unsigned short)rcClamp(bot, 0, 0xffff); // 空心span下表面
+				compactHeightfield.spans[currentCellIndex].h = (unsigned char)rcClamp(top - bot, 0, 0xff); // 空心span高度
 				compactHeightfield.areas[currentCellIndex] = span->area;
 				currentCellIndex++;
 				cell.count++;
@@ -480,6 +480,7 @@ bool rcBuildCompactHeightfield(rcContext* context, const int walkableHeight, con
 	}
 	
 	// Find neighbour connections.
+	// 找出每个cell index 上每个空心span从左上右下四方向上可行走的空心span起始索引
 	const int MAX_LAYERS = RC_NOT_CONNECTED - 1;
 	int maxLayerIndex = 0;
 	const int zStride = xSize; // for readability
@@ -523,7 +524,7 @@ bool rcBuildCompactHeightfield(rcContext* context, const int walkableHeight, con
 								maxLayerIndex = rcMax(maxLayerIndex, layerIndex);
 								continue;
 							}
-							rcSetCon(span, dir, layerIndex);
+							rcSetCon(span, dir, layerIndex); // 记录向当前寻找方向上可走的空心span索引，相对起始索引
 							break;
 						}
 					}

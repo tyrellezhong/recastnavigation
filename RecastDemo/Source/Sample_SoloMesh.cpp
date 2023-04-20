@@ -481,7 +481,7 @@ bool Sample_SoloMesh::handleBuild()
 
 
 	//
-	// Step 4. Partition walkable surface to simple regions.
+	// Step 4. Partition walkable surface to simple regions.   将实心Span转换为空心span，标记可行走与不可行走，与周围可走span索引
 	//
 
 	// Compact the heightfield so that it is faster to handle from now on.
@@ -505,14 +505,14 @@ bool Sample_SoloMesh::handleBuild()
 		m_solid = 0;
 	}
 		
-	// Erode the walkable area by agent radius.
+	// Erode the walkable area by agent radius. 根据agent半径，将离边界半径内的span修正为不可走
 	if (!rcErodeWalkableArea(m_ctx, m_cfg.walkableRadius, *m_chf))
 	{
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not erode.");
 		return false;
 	}
 
-	// (Optional) Mark areas.
+	// (Optional) Mark areas. 修改凸多变体内的span的Area类型
 	const ConvexVolume* vols = m_geom->getConvexVolumes();
 	for (int i  = 0; i < m_geom->getConvexVolumeCount(); ++i)
 		rcMarkConvexPolyArea(m_ctx, vols[i].verts, vols[i].nverts, vols[i].hmin, vols[i].hmax, (unsigned char)vols[i].area, *m_chf);
@@ -544,7 +544,7 @@ bool Sample_SoloMesh::handleBuild()
 	//     if you have large open areas with small obstacles (not a problem if you use tiles)
 	//   * good choice to use for tiled navmesh with medium and small sized tiles
 	
-	if (m_partitionType == SAMPLE_PARTITION_WATERSHED)
+	if (m_partitionType == SAMPLE_PARTITION_WATERSHED) // 分水岭算法
 	{
 		// Prepare for region partitioning, by calculating distance field along the walkable surface.
 		if (!rcBuildDistanceField(m_ctx, *m_chf))

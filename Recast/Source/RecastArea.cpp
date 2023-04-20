@@ -60,7 +60,7 @@ bool rcErodeWalkableArea(rcContext* ctx, int radius, rcCompactHeightfield& chf)
 			const rcCompactCell& c = chf.cells[x+y*w];
 			for (int i = (int)c.index, ni = (int)(c.index+c.count); i < ni; ++i)
 			{
-				if (chf.areas[i] == RC_NULL_AREA)
+				if (chf.areas[i] == RC_NULL_AREA)  // 自身span不可到达，视为边界，距离设置为0
 				{
 					dist[i] = 0;
 				}
@@ -75,13 +75,13 @@ bool rcErodeWalkableArea(rcContext* ctx, int radius, rcCompactHeightfield& chf)
 							const int nx = x + rcGetDirOffsetX(dir);
 							const int ny = y + rcGetDirOffsetY(dir);
 							const int nidx = (int)chf.cells[nx+ny*w].index + rcGetCon(s, dir);
-							if (chf.areas[nidx] != RC_NULL_AREA)
+							if (chf.areas[nidx] != RC_NULL_AREA) // 对应方向可到达
 							{
 								nc++;
 							}
 						}
 					}
-					// At least one missing neighbour.
+					// At least one missing neighbour.  周围4方向至少一个方向不可到达，视为边界，距离设置为0
 					if (nc != 4)
 						dist[i] = 0;
 				}
@@ -90,7 +90,7 @@ bool rcErodeWalkableArea(rcContext* ctx, int radius, rcCompactHeightfield& chf)
 	}
 	
 	unsigned char nd;
-	
+	//找出离边界的最短距离
 	// Pass 1
 	for (int y = 0; y < h; ++y)
 	{
@@ -140,7 +140,7 @@ bool rcErodeWalkableArea(rcContext* ctx, int radius, rcCompactHeightfield& chf)
 						const int aax = ax + rcGetDirOffsetX(2);
 						const int aay = ay + rcGetDirOffsetY(2);
 						const int aai = (int)chf.cells[aax+aay*w].index + rcGetCon(as, 2);
-						nd = (unsigned char)rcMin((int)dist[aai]+3, 255);
+						nd = (unsigned char)rcMin((int)dist[aai]+3, 255);  // 对角线+3个cell，0.5倍是1.5cell，与1.414差不多，整数计算取1.5
 						if (nd < dist[i])
 							dist[i] = nd;
 					}
@@ -207,7 +207,7 @@ bool rcErodeWalkableArea(rcContext* ctx, int radius, rcCompactHeightfield& chf)
 		}
 	}
 	
-	const unsigned char thr = (unsigned char)(radius*2);
+	const unsigned char thr = (unsigned char)(radius*2);  // 由于每次距离加2个cell，所以此处半径乘2
 	for (int i = 0; i < chf.spanCount; ++i)
 		if (dist[i] < thr)
 			chf.areas[i] = RC_NULL_AREA;
@@ -393,8 +393,8 @@ void rcMarkConvexPolyArea(rcContext* ctx, const float* verts, const int nverts,
 		rcVmin(bmin, &verts[i*3]);
 		rcVmax(bmax, &verts[i*3]);
 	}
-	bmin[1] = hmin;
-	bmax[1] = hmax;
+	bmin[1] = hmin;  // 最低边界
+	bmax[1] = hmax; // 最高边界
 
 	int minx = (int)((bmin[0]-chf.bmin[0])/chf.cs);
 	int miny = (int)((bmin[1]-chf.bmin[1])/chf.ch);
@@ -414,7 +414,7 @@ void rcMarkConvexPolyArea(rcContext* ctx, const float* verts, const int nverts,
 	if (maxz >= chf.height) maxz = chf.height-1;	
 	
 	
-	// TODO: Optimize.
+	// TODO: Optimize.  找出在volume内的span，修改span的AreaID
 	for (int z = minz; z <= maxz; ++z)
 	{
 		for (int x = minx; x <= maxx; ++x)
@@ -432,9 +432,9 @@ void rcMarkConvexPolyArea(rcContext* ctx, const float* verts, const int nverts,
 					p[1] = 0;
 					p[2] = chf.bmin[2] + (z+0.5f)*chf.cs; 
 
-					if (pointInPoly(nverts, verts, p))
+					if (pointInPoly(nverts, verts, p))  // 二维平面内cel中心点在所给多边形内
 					{
-						chf.areas[i] = areaId;
+						chf.areas[i] = areaId;  // 修改span的AreaID
 					}
 				}
 			}

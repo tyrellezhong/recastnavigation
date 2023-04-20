@@ -68,13 +68,13 @@ static void calculateDistanceField(rcCompactHeightfield& chf, unsigned short* sr
 							nc++;
 					}
 				}
-				if (nc != 4)
+				if (nc != 4)  // 4方向有一块区域不一样，视为边界
 					src[i] = 0;
 			}
 		}
 	}
 	
-			
+	//以下逻辑：找出离边界的最短距离		
 	// Pass 1
 	for (int y = 0; y < h; ++y)
 	{
@@ -249,10 +249,10 @@ static unsigned short* boxBlur(rcCompactHeightfield& chf, int thr,
 }
 
 
-static bool floodRegion(int x, int y, int i,
+static bool floodRegion(int x, int y, int i,// 表示指定的Span
 						unsigned short level, unsigned short r,
 						rcCompactHeightfield& chf,
-						unsigned short* srcReg, unsigned short* srcDist,
+						unsigned short* srcReg, unsigned short* srcDist,// srcReg存放所有Span的Region Id信息 srcDist存放所有Span和水源的距离信息							
 						rcTempVector<LevelStackEntry>& stack)
 {
 	const int w = chf.width;
@@ -261,15 +261,16 @@ static bool floodRegion(int x, int y, int i,
 	
 	// Flood fill mark region.
 	stack.clear();
-	stack.push_back(LevelStackEntry(x, y, i));
+	stack.push_back(LevelStackEntry(x, y, i)); // 通过栈将递归变为迭代
 	srcReg[i] = r;
-	srcDist[i] = 0;
+	srcDist[i] = 0; // 自身即为水源，距离为0
 	
-	unsigned short lev = level >= 2 ? level-2 : 0;
+	unsigned short lev = level >= 2 ? level-2 : 0;  // lev以上，深度优先遍历时都设置为水源
 	int count = 0;
 	
 	while (stack.size() > 0)
 	{
+		// 栈尾取元素 深度优先
 		LevelStackEntry& back = stack.back();
 		int cx = back.x;
 		int cy = back.y;
@@ -278,7 +279,7 @@ static bool floodRegion(int x, int y, int i,
 		
 		const rcCompactSpan& cs = chf.spans[ci];
 		
-		// Check if any of the neighbours already have a valid region set.
+		// Check if any of the neighbours already have a valid region set.自身周围8宫格任意span已经有reg id
 		unsigned short ar = 0;
 		for (int dir = 0; dir < 4; ++dir)
 		{
@@ -318,15 +319,16 @@ static bool floodRegion(int x, int y, int i,
 				}				
 			}
 		}
-		if (ar != 0)
+		if (ar != 0)  // 周围已经设置过reg id， 此span不再设置
 		{
+			// 清空自身的Region Id,等周围Span遍历时设置
 			srcReg[ci] = 0;
 			continue;
 		}
 		
-		count++;
+		count++;// 至此表明需要用此RegionId产生新水源
 		
-		// Expand neighbours.
+		// Expand neighbours. // 对周围没有设置Region Id,且距离和本地迭代距离之差小于2的Span也设置Region Id,并存入栈中进行遍历
 		for (int dir = 0; dir < 4; ++dir)
 		{
 			if (rcGetCon(cs, dir) != RC_NOT_CONNECTED)
@@ -339,14 +341,14 @@ static bool floodRegion(int x, int y, int i,
 				if (chf.dist[ai] >= lev && srcReg[ai] == 0)
 				{
 					srcReg[ai] = r;
-					srcDist[ai] = 0;
+					srcDist[ai] = 0; // 自身即为水源，距离为0
 					stack.push_back(LevelStackEntry(ax, ay, ai));
 				}
 			}
 		}
 	}
 	
-	return count > 0;
+	return count > 0;// 表示本次是否产生了新Region
 }
 
 // Struct to keep track of entries in the region table that have been changed.
@@ -369,6 +371,7 @@ static void expandRegions(int maxIter, unsigned short level,
 
 	if (fillStack)
 	{
+		// 找到距离大于level的所有Span，分水岭算法最后用来保证所有Span都已处理时使用.
 		// Find cells revealed by the raised level.
 		stack.clear();
 		for (int y = 0; y < h; ++y)
@@ -388,7 +391,7 @@ static void expandRegions(int maxIter, unsigned short level,
 	}
 	else // use cells in the input stack
 	{
-		// mark all cells which already have a region
+		// mark all cells which already have a region// 若对应Region已经存在Id，则用-1标记为已经处理
 		for (int j=0; j<stack.size(); j++)
 		{
 			int i = stack[j].index;
@@ -419,14 +422,16 @@ static void expandRegions(int maxIter, unsigned short level,
 			unsigned short d2 = 0xffff;
 			const unsigned char area = chf.areas[i];
 			const rcCompactSpan& s = chf.spans[i];
+			// 以上下左右Span中和水源距离最近Span的Region Id作为自身的Region Id
+			// 最近距离+2作为自身和水源的距离
 			for (int dir = 0; dir < 4; ++dir)
 			{
-				if (rcGetCon(s, dir) == RC_NOT_CONNECTED) continue;
+				if (rcGetCon(s, dir) == RC_NOT_CONNECTED) continue;  // 邻居不可走
 				const int ax = x + rcGetDirOffsetX(dir);
 				const int ay = y + rcGetDirOffsetY(dir);
-				const int ai = (int)chf.cells[ax+ay*w].index + rcGetCon(s, dir);
-				if (chf.areas[ai] != area) continue;
-				if (srcReg[ai] > 0 && (srcReg[ai] & RC_BORDER_REG) == 0)
+				const int ai = (int)chf.cells[ax+ay*w].index + rcGetCon(s, dir); 
+				if (chf.areas[ai] != area) continue;  // area type 不一样
+				if (srcReg[ai] > 0 && (srcReg[ai] & RC_BORDER_REG) == 0) //
 				{
 					if ((int)srcDist[ai]+2 < (int)d2)
 					{
@@ -437,6 +442,7 @@ static void expandRegions(int maxIter, unsigned short level,
 			}
 			if (r)
 			{
+				// 标记本Region已经处理，将id和水源距离信息暂存，避免在遍历过程中修改以后影响其它Span的计算
 				stack[j].index = -1; // mark as used
 				dirtyEntries.push_back(DirtyEntry(i, r, d2));
 			}
@@ -445,7 +451,7 @@ static void expandRegions(int maxIter, unsigned short level,
 				failed++;
 			}
 		}
-		
+		// 将暂存的id和距离信息存入srcReg和srcDist
 		// Copy entries that differ between src and dst to keep them in sync.
 		for (int i = 0; i < dirtyEntries.size(); i++) {
 			int idx = dirtyEntries[i].index;
@@ -491,8 +497,10 @@ static void sortCellsByLevel(unsigned short startLevel,
 				if (chf.areas[i] == RC_NULL_AREA || srcReg[i] != 0)
 					continue;
 
-				int level = chf.dist[i] >> loglevelsPerStack;
-				int sId = startLevel - level;
+				int level = chf.dist[i] >> loglevelsPerStack;//右移一位， 除以2
+				// 栈组的索引，由于level除以2，所以11，10会是同一个索引，9，8会是同一个索引
+				// 由于有8个栈，level又除以2，所以最多连续处理16个连续level
+				int sId = startLevel - level; 
 				if (sId >= (int)nbStacks)
 					continue;
 				if (sId < 0)
@@ -1281,7 +1289,7 @@ bool rcBuildDistanceField(rcContext* ctx, rcCompactHeightfield& chf)
 	{
 		rcScopedTimer timerDist(ctx, RC_TIMER_BUILD_DISTANCEFIELD_DIST);
 
-		calculateDistanceField(chf, src, maxDist);
+		calculateDistanceField(chf, src, maxDist);  // 寻找每个span离最近的无法通过span的距离
 		chf.maxDistance = maxDist;
 	}
 
@@ -1289,6 +1297,8 @@ bool rcBuildDistanceField(rcContext* ctx, rcCompactHeightfield& chf)
 		rcScopedTimer timerBlur(ctx, RC_TIMER_BUILD_DISTANCEFIELD_BLUR);
 
 		// Blur
+		// 平滑距离
+		// 计算以当前CompactSpan为中心的九宫格中所有CompactSpan的距离平均值，将平均值作为当前CompactSpan的距离。
 		if (boxBlur(chf, 1, src, dst) != src)
 			rcSwap(src, dst);
 
@@ -1543,28 +1553,28 @@ bool rcBuildRegions(rcContext* ctx, rcCompactHeightfield& chf,
 
 	const int LOG_NB_STACKS = 3;
 	const int NB_STACKS = 1 << LOG_NB_STACKS;
-	rcTempVector<LevelStackEntry> lvlStacks[NB_STACKS];
+	rcTempVector<LevelStackEntry> lvlStacks[NB_STACKS]; // 初始化基数排序数组
 	for (int i=0; i<NB_STACKS; ++i)
 		lvlStacks[i].reserve(256);
 
-	rcTempVector<LevelStackEntry> stack;
+	rcTempVector<LevelStackEntry> stack;// 初始化用于floodRegion中将递归变为循环的数组(栈）
 	stack.reserve(256);
-	
+	// 初始化Region Id和水源距离
 	unsigned short* srcReg = buf;
 	unsigned short* srcDist = buf+chf.spanCount;
 	
 	memset(srcReg, 0, sizeof(unsigned short)*chf.spanCount);
 	memset(srcDist, 0, sizeof(unsigned short)*chf.spanCount);
 	
-	unsigned short regionId = 1;
-	unsigned short level = (chf.maxDistance+1) & ~1;
+	unsigned short regionId = 1; // reg从1开始
+	unsigned short level = (chf.maxDistance+1) & ~1; // level 从偶数开始处理
 
 	// TODO: Figure better formula, expandIters defines how much the 
 	// watershed "overflows" and simplifies the regions. Tying it to
 	// agent radius was usually good indication how greedy it could be.
 //	const int expandIters = 4 + walkableRadius * 2;
 	const int expandIters = 8;
-
+	// 标记边界region
 	if (borderSize > 0)
 	{
 		// Make sure border will not overflow.
@@ -1587,17 +1597,17 @@ bool rcBuildRegions(rcContext* ctx, rcCompactHeightfield& chf,
 		sId = (sId+1) & (NB_STACKS-1);
 
 //		ctx->startTimer(RC_TIMER_DIVIDE_TO_LEVELS);
-
-		if (sId == 0)
+		// 基数排序，一次排好八层，后续每次迭代直接使用，用完继续排序
+		if (sId == 0)// 排序，level高的先排在lvlstack开始，优先作为水源
 			sortCellsByLevel(level, chf, srcReg, NB_STACKS, lvlStacks, 1);
 		else 
-			appendStacks(lvlStacks[sId-1], lvlStacks[sId], srcReg); // copy left overs from last level
+			appendStacks(lvlStacks[sId-1], lvlStacks[sId], srcReg); // copy left overs from last level 拷贝剩下没有设置regid到后一个stack
 
 //		ctx->stopTimer(RC_TIMER_DIVIDE_TO_LEVELS);
 
 		{
 			rcScopedTimer timerExpand(ctx, RC_TIMER_BUILD_REGIONS_EXPAND);
-
+			// 灌水，首次迭代无任何处理
 			// Expand current regions until no empty connected cells found.
 			expandRegions(expandIters, level, chf, srcReg, srcDist, lvlStacks[sId], false);
 		}
@@ -1614,6 +1624,8 @@ bool rcBuildRegions(rcContext* ctx, rcCompactHeightfield& chf,
 				int i = current.index;
 				if (i >= 0 && srcReg[i] == 0)
 				{
+					// floodRegion是分水岭算法中"产生水源"的接口，主要思想是为指定位置的CompactSpan的Region赋予指定Id，
+					// 并以从它开始，采用深度优先的方式，查找满足条件的邻居并为其赋予该Region Id
 					if (floodRegion(x, y, i, level, regionId, chf, srcReg, srcDist, stack))
 					{
 						if (regionId == 0xFFFF)
@@ -1622,13 +1634,13 @@ bool rcBuildRegions(rcContext* ctx, rcCompactHeightfield& chf,
 							return false;
 						}
 						
-						regionId++;
+						regionId++;// 递增区域id，新水源id会递增
 					}
 				}
 			}
 		}
 	}
-	
+	// 最后收尾，对漏网Span进行处理
 	// Expand current regions until no empty connected cells found.
 	expandRegions(expandIters*8, 0, chf, srcReg, srcDist, stack, true);
 	
@@ -1636,7 +1648,7 @@ bool rcBuildRegions(rcContext* ctx, rcCompactHeightfield& chf,
 	
 	{
 		rcScopedTimer timerFilter(ctx, RC_TIMER_BUILD_REGIONS_FILTER);
-
+		// 合并Region 过滤小Region
 		// Merge regions and filter out smalle regions.
 		rcIntArray overlaps;
 		chf.maxRegions = regionId;
@@ -1650,7 +1662,7 @@ bool rcBuildRegions(rcContext* ctx, rcCompactHeightfield& chf,
 		}
 	}
 		
-	// Write the result out.
+	// Write the result out.// 将结果存在紧凑高度场中
 	for (int i = 0; i < chf.spanCount; ++i)
 		chf.spans[i].reg = srcReg[i];
 	

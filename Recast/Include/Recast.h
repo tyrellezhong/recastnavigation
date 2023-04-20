@@ -1196,6 +1196,7 @@ bool rcBuildRegionsMonotone(rcContext* ctx, rcCompactHeightfield& chf,
 /// @param[in]		span			The span to update.
 /// @param[in]		direction		The direction to set. [Limits: 0 <= value < 4]
 /// @param[in]		neighborIndex	The index of the neighbor span.
+/// 此函数设置了span在特定方向上可行走的相对起始值span index = layerIndex
 inline void rcSetCon(rcCompactSpan& span, int direction, int neighborIndex)
 {
 	const unsigned int shift = (unsigned int)direction * 6;
