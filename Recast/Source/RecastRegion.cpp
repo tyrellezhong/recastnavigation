@@ -699,6 +699,7 @@ static bool isSolidEdge(rcCompactHeightfield& chf, const unsigned short* srcReg,
 		const int ai = (int)chf.cells[ax+ay*chf.width].index + rcGetCon(s, dir);
 		r = srcReg[ai];
 	}
+	// 与对应方向reg不一样，视为边界
 	if (r == srcReg[i])
 		return false;
 	return true;
@@ -825,16 +826,16 @@ static bool mergeAndFilterRegions(rcContext* ctx, int minRegionArea, int mergeRe
 					continue;
 				
 				rcRegion& reg = regions[r];
-				reg.spanCount++;
+				reg.spanCount++;  // 此reg增加span数量
 				
-				// Update floors.
+				// Update floors. 地板
 				for (int j = (int)c.index; j < ni; ++j)
 				{
 					if (i == j) continue;
 					unsigned short floorId = srcReg[j];
 					if (floorId == 0 || floorId >= nreg)
 						continue;
-					if (floorId == r)
+					if (floorId == r) // 同一cell垂直span的reg一样，重合
 						reg.overlap = true;
 					addUniqueFloorRegion(reg, floorId);
 				}
