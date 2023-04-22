@@ -336,7 +336,7 @@ static bool floodRegion(int x, int y, int i,// 表示指定的Span
 				const int ax = cx + rcGetDirOffsetX(dir);
 				const int ay = cy + rcGetDirOffsetY(dir);
 				const int ai = (int)chf.cells[ax+ay*w].index + rcGetCon(cs, dir);
-				if (chf.areas[ai] != area)
+				if (chf.areas[ai] != area) // 相同area才继续
 					continue;
 				if (chf.dist[ai] >= lev && srcReg[ai] == 0)
 				{
@@ -422,7 +422,7 @@ static void expandRegions(int maxIter, unsigned short level,
 			unsigned short d2 = 0xffff;
 			const unsigned char area = chf.areas[i];
 			const rcCompactSpan& s = chf.spans[i];
-			// 以上下左右Span中和水源距离最近Span的Region Id作为自身的Region Id
+			// 以上下左右Span中和水源距离最近Span的Region Id作为自身的Region Id（周围span有reg的话）
 			// 最近距离+2作为自身和水源的距离
 			for (int dir = 0; dir < 4; ++dir)
 			{
@@ -431,7 +431,7 @@ static void expandRegions(int maxIter, unsigned short level,
 				const int ay = y + rcGetDirOffsetY(dir);
 				const int ai = (int)chf.cells[ax+ay*w].index + rcGetCon(s, dir); 
 				if (chf.areas[ai] != area) continue;  // area type 不一样
-				if (srcReg[ai] > 0 && (srcReg[ai] & RC_BORDER_REG) == 0) //
+				if (srcReg[ai] > 0 && (srcReg[ai] & RC_BORDER_REG) == 0) // 非边界
 				{
 					if ((int)srcDist[ai]+2 < (int)d2)
 					{
@@ -544,11 +544,11 @@ struct rcRegion
 	unsigned short id;				// ID of the region
 	unsigned char areaType;			// Are type.
 	bool remap;
-	bool visited;
-	bool overlap;
-	bool connectsToBorder;
+	bool visited; // 记录在过滤小区域时已被遍历
+	bool overlap;// 同一cell 上不同span reg相同，此reg设置overlap
+	bool connectsToBorder; // 挨着TileBorder
 	unsigned short ymin, ymax;
-	rcIntArray connections;
+	rcIntArray connections; // reg挨着的其他regid
 	rcIntArray floors;
 };
 
@@ -597,12 +597,12 @@ static bool canMergeWithRegion(const rcRegion& rega, const rcRegion& regb)
 	int n = 0;
 	for (int i = 0; i < rega.connections.size(); ++i)
 	{
-		if (rega.connections[i] == regb.id)
+		if (rega.connections[i] == regb.id)  
 			n++;
 	}
-	if (n > 1)
+	if (n > 1) // 链接数大于1，不能合并
 		return false;
-	for (int i = 0; i < rega.floors.size(); ++i)
+	for (int i = 0; i < rega.floors.size(); ++i) // regb是地板，不合并
 	{
 		if (rega.floors[i] == regb.id)
 			return false;
@@ -666,7 +666,7 @@ static bool mergeRegions(rcRegion& rega, rcRegion& regb)
 	
 	removeAdjacentNeighbours(rega);
 	
-	for (int j = 0; j < regb.floors.size(); ++j)
+	for (int j = 0; j < regb.floors.size(); ++j)  // 将地板区域加入rega
 		addUniqueFloorRegion(rega, regb.floors[j]);
 	rega.spanCount += regb.spanCount;
 	regb.spanCount = 0;
@@ -862,7 +862,7 @@ static bool mergeAndFilterRegions(rcContext* ctx, int minRegionArea, int mergeRe
 				{
 					// The cell is at border.
 					// Walk around the contour to find all the neighbours.
-					walkContour(x, y, i, ndir, chf, srcReg, reg.connections);
+					walkContour(x, y, i, ndir, chf, srcReg, reg.connections);  // 找出当前区域挨着的reg
 				}
 			}
 		}
@@ -898,12 +898,12 @@ static bool mergeAndFilterRegions(rcContext* ctx, int minRegionArea, int mergeRe
 			
 			rcRegion& creg = regions[ri];
 
-			spanCount += creg.spanCount;
+			spanCount += creg.spanCount;  // 紧挨区域累计span
 			trace.push(ri);
 
 			for (int j = 0; j < creg.connections.size(); ++j)
 			{
-				if (creg.connections[j] & RC_BORDER_REG)
+				if (creg.connections[j] & RC_BORDER_REG) // 当前区域紧挨tile边界
 				{
 					connectsToBorder = true;
 					continue;
@@ -923,7 +923,7 @@ static bool mergeAndFilterRegions(rcContext* ctx, int minRegionArea, int mergeRe
 		// Do not remove areas which connect to tile borders
 		// as their size cannot be estimated correctly and removing them
 		// can potentially remove necessary areas.
-		if (spanCount < minRegionArea && !connectsToBorder)
+		if (spanCount < minRegionArea && !connectsToBorder)  // 几个挨着区域累计span小于最小区域要求，丢弃
 		{
 			// Kill all visited regions.
 			for (int j = 0; j < trace.size(); ++j)
