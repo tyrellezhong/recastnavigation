@@ -723,7 +723,8 @@ static void walkContour(int x, int y, int i, int dir,
 		curReg = srcReg[ai];
 	}
 	cont.push(curReg);
-			
+	
+	//顺着边界迭代，遇到与前一个区域ID不一样，则加入链接，表示与其区域有链接
 	int iter = 0;
 	while (++iter < 40000)
 	{
@@ -775,7 +776,7 @@ static void walkContour(int x, int y, int i, int dir,
 		}
 	}
 
-	// Remove adjacent duplicates.
+	// Remove adjacent duplicates. 去除挨着的重复的（连续两个一样reg id）
 	if (cont.size() > 1)
 	{
 		for (int j = 0; j < cont.size(); )
@@ -850,7 +851,7 @@ static bool mergeAndFilterRegions(rcContext* ctx, int minRegionArea, int mergeRe
 				int ndir = -1;
 				for (int dir = 0; dir < 4; ++dir)
 				{
-					if (isSolidEdge(chf, srcReg, x, y, i, dir))
+					if (isSolidEdge(chf, srcReg, x, y, i, dir))  // 区域id不一样，视为边界
 					{
 						ndir = dir;
 						break;
