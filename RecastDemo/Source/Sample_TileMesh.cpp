@@ -605,10 +605,10 @@ bool Sample_TileMesh::handleBuild()
 
 	dtNavMeshParams params;
 	rcVcopy(params.orig, m_geom->getNavMeshBoundsMin());
-	params.tileWidth = m_tileSize*m_cellSize;
+	params.tileWidth = m_tileSize*m_cellSize; // m_tileSize单位为多少个cellSize
 	params.tileHeight = m_tileSize*m_cellSize;
-	params.maxTiles = m_maxTiles;
-	params.maxPolys = m_maxPolysPerTile;
+	params.maxTiles = m_maxTiles; // navmesh 能够包含的最多tiles数
+	params.maxPolys = m_maxPolysPerTile; // 每个tile最多包含的ploy数
 	
 	dtStatus status;
 	

@@ -969,7 +969,7 @@ dtStatus dtNavMesh::addTile(unsigned char* data, int dataSize, int flags,
 	if (!tile)
 		return DT_FAILURE | DT_OUT_OF_MEMORY;
 	
-	// Insert tile into the position lut.
+	// Insert tile into the position lut.   // 将新tile加入到哈希查询表中
 	int h = computeTileHash(header->x, header->y, m_tileLutMask);
 	tile->next = m_posLookup[h];
 	m_posLookup[h] = tile;
