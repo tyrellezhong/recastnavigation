@@ -1,4 +1,4 @@
-# ifndef LOG_SYS_H
+ï»¿# ifndef LOG_SYS_H
 # define LOG_SYS_H
 
 # include <iostream>
@@ -22,11 +22,11 @@ class Logger;
 enum log_level
 {
 	debug, info, warning, error
-};// ÈÕÖ¾µÈ¼¶
+};// æ—¥å¿—ç­‰çº§
 enum log_target
 {
 	file, terminal, file_and_terminal
-};// ÈÕÖ¾Êä³öÄ¿±ê
+};// æ—¥å¿—è¾“å‡ºç›®æ ‡
 
 
 extern string currTime();
@@ -58,19 +58,19 @@ g_log.output(mes, priority); \
 class Logger
 {
 public:
-	Logger();  // Ä¬ÈÏ¹¹Ôìº¯Êı
+	Logger();  // é»˜è®¤æ„é€ å‡½æ•°
 	Logger(log_target target, log_level level, string path);
 	void Debug(string text);
 	void Info(string text);
 	void Warn(string text);
 	void Error(string text);
-	void output(string text, log_level act_level);            // Êä³öĞĞÎª
+	void output(string text, log_level act_level);            // è¾“å‡ºè¡Œä¸º
 
 private:
-	std::ofstream outfile;    // ½«ÈÕÖ¾Êä³öµ½ÎÄ¼şµÄÁ÷¶ÔÏó
-	log_target target;        // ÈÕÖ¾Êä³öÄ¿±ê
-	string path;              // ÈÕÖ¾ÎÄ¼şÂ·¾¶
-	log_level level;          // ÈÕÖ¾µÈ¼¶
+	std::ofstream outfile;    // å°†æ—¥å¿—è¾“å‡ºåˆ°æ–‡ä»¶çš„æµå¯¹è±¡
+	log_target target;        // æ—¥å¿—è¾“å‡ºç›®æ ‡
+	string path;              // æ—¥å¿—æ–‡ä»¶è·¯å¾„
+	log_level level;          // æ—¥å¿—ç­‰çº§
 };
 
 # endif

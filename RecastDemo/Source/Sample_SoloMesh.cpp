@@ -36,6 +36,7 @@
 #include "OffMeshConnectionTool.h"
 #include "ConvexVolumeTool.h"
 #include "CrowdTool.h"
+#include "Log.h"
 
 #ifdef WIN32
 #	define snprintf _snprintf
@@ -369,6 +370,8 @@ void Sample_SoloMesh::handleMeshChanged(class InputGeom* geom)
 
 bool Sample_SoloMesh::handleBuild()
 {
+	LogInfo("start build solo mesh!");
+
 	if (!m_geom || !m_geom->getMesh())
 	{
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Input mesh is not specified.");
