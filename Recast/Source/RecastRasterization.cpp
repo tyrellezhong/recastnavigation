@@ -182,8 +182,8 @@ static bool addSpan(rcHeightfield& hf,
 	else
 	{
 		// This span should go before the others in the list
-		newSpan->next = hf.spans[columnIndex]; // 同一个位置（x，z），next排列从下到上，也就是上表面越来越高
-		hf.spans[columnIndex] = newSpan;
+		newSpan->next = hf.spans[columnIndex]; // 同一个位置（x，z），next排列从下到上，也就是上表面越来越高 保持newSpan在newSpan->next下面的结构
+		hf.spans[columnIndex] = newSpan;  // 当前的span处于最底部
 	}
 
 	return true;
@@ -365,11 +365,11 @@ static bool rasterizeTri(const float* v0, const float* v1, const float* v2,
 		dividePoly(in, nvIn, inRow, &nvRow, p1, &nvIn, cellZ + cellSize, RC_AXIS_Z);
 		rcSwap(in, p1); // 交换返回的polygon 2到in，继续在Z轴切割polygon 2
 		
-		if (nvRow < 3)
+		if (nvRow < 3) // 呈现一条线，忽略体素化
 		{
 			continue;
 		}
-		if (z < 0)
+		if (z < 0) // 在bound外的区域忽略体素化
 		{
 			continue;
 		}

@@ -299,7 +299,7 @@ void rcCalcBounds(const float* verts, int numVerts, float* minBounds, float* max
 
 void rcCalcGridSize(const float* minBounds, const float* maxBounds, const float cellSize, int* sizeX, int* sizeZ)
 {
-	*sizeX = (int)((maxBounds[0] - minBounds[0]) / cellSize + 0.5f);
+	*sizeX = (int)((maxBounds[0] - minBounds[0]) / cellSize + 0.5f); // 相当于四舍五入
 	*sizeZ = (int)((maxBounds[2] - minBounds[2]) / cellSize + 0.5f);
 }
 
@@ -344,6 +344,8 @@ void rcMarkWalkableTriangles(rcContext* context, const float walkableSlopeAngle,
 	const float walkableThr = cosf(walkableSlopeAngle / 180.0f * RC_PI);
 
 	float norm[3];
+	
+	// 原理，计算三角形的法向量，法向量与（0，1，0）的夹角小于walkableThr,则可行走
 
 	for (int i = 0; i < numTris; ++i)
 	{

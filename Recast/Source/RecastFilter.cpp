@@ -110,7 +110,8 @@ void rcFilterLedgeSpans(rcContext* context, const int walkableHeight, const int 
 					int neighborBot = -walkableClimb;
 					int neighborTop = neighborSpan ? (int)neighborSpan->smin : MAX_HEIGHT;
 					
-					// Skip neighbour if the gap between the spans is too small.
+					// 疑问？ 和四周的gab 很小时，是否应该把当前span标记为不可走
+					// Skip neighbour if the gap between the spans is too small.  
 					if (rcMin(top, neighborTop) - rcMax(bot, neighborBot) > walkableHeight)
 					{
 						minNeighborHeight = rcMin(minNeighborHeight, neighborBot - bot);

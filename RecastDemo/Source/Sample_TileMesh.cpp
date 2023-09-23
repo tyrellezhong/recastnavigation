@@ -731,7 +731,7 @@ void Sample_TileMesh::buildAllTiles()
 	int gw = 0, gh = 0;
 	rcCalcGridSize(bmin, bmax, m_cellSize, &gw, &gh);
 	const int ts = (int)m_tileSize;
-	const int tw = (gw + ts-1) / ts;
+	const int tw = (gw + ts-1) / ts; // 多一个cell，则多一个tile
 	const int th = (gh + ts-1) / ts;
 	const float tcs = m_tileSize*m_cellSize;
 

@@ -60,6 +60,7 @@ class Logger
 public:
 	Logger();  // 默认构造函数
 	Logger(log_target target, log_level level, string path);
+	~Logger();
 	void Debug(string text);
 	void Info(string text);
 	void Warn(string text);
