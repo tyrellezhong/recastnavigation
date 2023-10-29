@@ -117,6 +117,7 @@ static void walkContour(int x, int y, int i,
 	int iter = 0;
 	while (++iter < 40000)
 	{
+		// 处理朝向是边界的情形
 		if (flags[i] & (1 << dir))
 		{
 			// Choose the edge corner
@@ -125,6 +126,7 @@ static void walkContour(int x, int y, int i,
 			int px = x;
 			int py = getCornerHeight(x, y, i, dir, chf, isBorderVertex);
 			int pz = y;
+			// 确定要拾取的轮廓点的位置
 			switch(dir)
 			{
 				case 0: pz++; break;
@@ -152,8 +154,10 @@ static void walkContour(int x, int y, int i,
 			points.push(r);
 			
 			flags[i] &= ~(1 << dir); // Remove visited edges
+			// 顺时针旋转朝向
 			dir = (dir+1) & 0x3;  // Rotate CW
 		}
+		// 处理朝向不是边界的情形
 		else
 		{
 			int ni = -1;
@@ -170,9 +174,11 @@ static void walkContour(int x, int y, int i,
 				// Should not happen.
 				return;
 			}
+			// 修改下一次查询的CompactSpan位置
 			x = nx;
 			y = ny;
 			i = ni;
+			// 逆时针旋转朝向
 			dir = (dir+3) & 0x3;	// Rotate CCW
 		}
 		
