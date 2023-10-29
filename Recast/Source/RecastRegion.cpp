@@ -838,7 +838,7 @@ static bool mergeAndFilterRegions(rcContext* ctx, int minRegionArea, int mergeRe
 						continue;
 					if (floorId == r) // 同一cell垂直span的reg一样，重合
 						reg.overlap = true;
-					addUniqueFloorRegion(reg, floorId);
+					addUniqueFloorRegion(reg, floorId); // 不懂原因？
 				}
 				
 				// Have found contour
@@ -935,6 +935,7 @@ static bool mergeAndFilterRegions(rcContext* ctx, int minRegionArea, int mergeRe
 	}
 	
 	// Merge too small regions to neighbour regions.
+	// 将较小的联通其他reg的合并在一起
 	int mergeCount = 0 ;
 	do
 	{
@@ -1026,7 +1027,7 @@ static bool mergeAndFilterRegions(rcContext* ctx, int minRegionArea, int mergeRe
 	}
 	maxRegionId = regIdGen;
 	
-	// Remap regions.
+	// Remap regions. // 重新映射reg id
 	for (int i = 0; i < chf.spanCount; ++i)
 	{
 		if ((srcReg[i] & RC_BORDER_REG) == 0)

@@ -955,7 +955,7 @@ unsigned char* Sample_TileMesh::buildTileMesh(const int tx, const int ty, const 
 		m_solid = 0;
 	}
 
-	// Erode the walkable area by agent radius.
+	// Erode the walkable area by agent radius. 根据agent半径修正边缘不可行走区域
 	if (!rcErodeWalkableArea(m_ctx, m_cfg.walkableRadius, *m_chf))
 	{
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not erode.");

@@ -424,7 +424,7 @@ static bool rasterizeTri(const float* v0, const float* v1, const float* v2,
 				spanMin = rcMin(spanMin, p1[vert * 3 + 1]);
 				spanMax = rcMax(spanMax, p1[vert * 3 + 1]);
 			}
-			spanMin -= hfBBMin[1];
+			spanMin -= hfBBMin[1];  // 换算成到高度场底部的距离，之后用cell hight归一化
 			spanMax -= hfBBMin[1];
 			
 			// Skip the span if it's completely outside the heightfield bounding box

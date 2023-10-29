@@ -449,6 +449,7 @@ int dtObstacleAvoidanceQuery::sampleVelocityGrid(const float* pos, const float r
 	if (debug)
 		debug->reset();
 
+
 	const float cvx = dvel[0] * m_params.velBias;
 	const float cvz = dvel[2] * m_params.velBias;
 	const float cs = vmax * 2 * (1 - m_params.velBias) / (float)(m_params.gridSize-1);
@@ -578,7 +579,7 @@ int dtObstacleAvoidanceQuery::sampleVelocityAdaptive(const float* pos, const flo
 		}
 	}
 
-
+	m_params.velBias = 0.2;
 	// Start sampling.
 	float cr = vmax * (1.0f - m_params.velBias);
 	float res[3];
