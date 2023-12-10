@@ -1267,6 +1267,7 @@ bool rcBuildPolyMesh(rcContext* ctx, rcContourSet& cset, const int nvp, rcPolyMe
 	}
 	
 	// Find portal edges
+	// 标记多变形的边是通向其他tile的点
 	if (mesh.borderSize > 0)
 	{
 		const int w = cset.width;
@@ -1286,13 +1287,13 @@ bool rcBuildPolyMesh(rcContext* ctx, rcContourSet& cset, const int nvp, rcPolyMe
 				const unsigned short* vb = &mesh.verts[p[nj]*3];
 
 				if ((int)va[0] == 0 && (int)vb[0] == 0)
-					p[nvp+j] = 0x8000 | 0;
+					p[nvp+j] = 0x8000 | 0; // 左边
 				else if ((int)va[2] == h && (int)vb[2] == h)
-					p[nvp+j] = 0x8000 | 1;
+					p[nvp+j] = 0x8000 | 1; // 上边
 				else if ((int)va[0] == w && (int)vb[0] == w)
-					p[nvp+j] = 0x8000 | 2;
+					p[nvp+j] = 0x8000 | 2; // 右边
 				else if ((int)va[2] == 0 && (int)vb[2] == 0)
-					p[nvp+j] = 0x8000 | 3;
+					p[nvp+j] = 0x8000 | 3; // 下边
 			}
 		}
 	}
