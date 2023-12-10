@@ -346,7 +346,7 @@ static int triangulate(int n, const int* verts, int* indices, int* tris)
 		int i1 = next(i, n);
 		int i2 = next(i1, n);
 		if (diagonal(i, i2, n, verts, indices))
-			indices[i1] |= 0x80000000;
+			indices[i1] |= 0x80000000; // 将点标记为耳朵
 	}
 	
 	while (n > 3)
@@ -364,7 +364,7 @@ static int triangulate(int n, const int* verts, int* indices, int* tris)
 				int dx = p2[0] - p0[0];
 				int dy = p2[2] - p0[2];
 				int len = dx*dx + dy*dy;
-				
+				// 找边最短的耳朵
 				if (minLen < 0 || len < minLen)
 				{
 					minLen = len;
@@ -415,7 +415,7 @@ static int triangulate(int n, const int* verts, int* indices, int* tris)
 		int i = mini;
 		int i1 = next(i, n);
 		int i2 = next(i1, n);
-		
+		// 保存可以切割的三角形点索引
 		*dst++ = indices[i] & 0x0fffffff;
 		*dst++ = indices[i1] & 0x0fffffff;
 		*dst++ = indices[i2] & 0x0fffffff;
@@ -429,6 +429,7 @@ static int triangulate(int n, const int* verts, int* indices, int* tris)
 		if (i1 >= n) i1 = 0;
 		i = prev(i1,n);
 		// Update diagonal flags.
+		// 更新被切割的边的两个端点的耳朵标志
 		if (diagonal(prev(i, n), i1, n, verts, indices))
 			indices[i] |= 0x80000000;
 		else
@@ -1108,7 +1109,9 @@ bool rcBuildPolyMesh(rcContext* ctx, rcContourSet& cset, const int nvp, rcPolyMe
 		// Triangulate contour
 		for (int j = 0; j < cont.nverts; ++j)
 			indices[j] = j;
-			
+		
+		// 采用耳割法，将区域分割为三角形，返回三角形的个数
+		// tris 每三个元素为一个三角形，每个元素存储的是点在count.nverts中的索引
 		int ntris = triangulate(cont.nverts, cont.verts, &indices[0], &tris[0]);
 		if (ntris <= 0)
 		{
@@ -1131,6 +1134,8 @@ bool rcBuildPolyMesh(rcContext* ctx, rcContourSet& cset, const int nvp, rcPolyMe
 		for (int j = 0; j < cont.nverts; ++j)
 		{
 			const int* v = &cont.verts[j*4];
+			// 将点存入mesh.verts中，返回的是点在mesh.verts中的索引，
+			// 此处的indices[j],表示cont.nverts中的第j个点在mesh.verts中索引，后面的三角形存储可以便捷地表示成在mesh中
 			indices[j] = addVertex((unsigned short)v[0], (unsigned short)v[1], (unsigned short)v[2],
 								   mesh.verts, firstVert, nextVert, mesh.nverts);
 			if (v[3] & RC_BORDER_VERTEX)
@@ -1148,6 +1153,7 @@ bool rcBuildPolyMesh(rcContext* ctx, rcContourSet& cset, const int nvp, rcPolyMe
 			int* t = &tris[j*3];
 			if (t[0] != t[1] && t[0] != t[2] && t[1] != t[2])
 			{
+				// 存储三角形，记录的是点在mesh.verts中的索引
 				polys[npolys*nvp+0] = (unsigned short)indices[t[0]];
 				polys[npolys*nvp+1] = (unsigned short)indices[t[1]];
 				polys[npolys*nvp+2] = (unsigned short)indices[t[2]];
@@ -1158,6 +1164,10 @@ bool rcBuildPolyMesh(rcContext* ctx, rcContourSet& cset, const int nvp, rcPolyMe
 			continue;
 		
 		// Merge polygons.
+		//a.遍历所有的多边形对，找到相邻的多边形
+		//	b.判断相邻多边形合并后的多边形是否仍然是凸多边形，若不是则不合并。
+		//	c.对于所有可以合并的多边形对，找出相邻边最长的一对，进行合并。
+		//	d.重复以上过程，直到所有多边形已经合并。
 		if (nvp > 3)
 		{
 			for(;;)
@@ -1172,13 +1182,13 @@ bool rcBuildPolyMesh(rcContext* ctx, rcContourSet& cset, const int nvp, rcPolyMe
 					for (int k = j+1; k < npolys; ++k)
 					{
 						unsigned short* pk = &polys[k*nvp];
-						int ea, eb;
+						int ea, eb; // 合并边端点
 						int v = getPolyMergeValue(pj, pk, mesh.verts, ea, eb, nvp);
 						if (v > bestMergeVal)
 						{
 							bestMergeVal = v;
-							bestPa = j;
-							bestPb = k;
+							bestPa = j;  // 多边形a
+							bestPb = k; // 多变形b 
 							bestEa = ea;
 							bestEb = eb;
 						}
@@ -1205,6 +1215,7 @@ bool rcBuildPolyMesh(rcContext* ctx, rcContourSet& cset, const int nvp, rcPolyMe
 		}
 		
 		// Store polygons.
+		// 存储最终的多边形
 		for (int j = 0; j < npolys; ++j)
 		{
 			unsigned short* p = &mesh.polys[mesh.npolys*nvp*2];
@@ -1224,6 +1235,7 @@ bool rcBuildPolyMesh(rcContext* ctx, rcContourSet& cset, const int nvp, rcPolyMe
 	
 	
 	// Remove edge vertices.
+	// 移除增加的在边界中的顶点
 	for (int i = 0; i < mesh.nverts; ++i)
 	{
 		if (vflags[i])
@@ -1246,6 +1258,8 @@ bool rcBuildPolyMesh(rcContext* ctx, rcContourSet& cset, const int nvp, rcPolyMe
 	}
 	
 	// Calculate adjacency.
+	// 计算每个多边形的每条边相邻的多变形
+	// “第一个nvp存储多边形的定点，第二个nvp存储每条边相邻的多边形索引”
 	if (!buildMeshAdjacency(mesh.polys, mesh.npolys, mesh.nverts, nvp))
 	{
 		ctx->log(RC_LOG_ERROR, "rcBuildPolyMesh: Adjacency failed.");
