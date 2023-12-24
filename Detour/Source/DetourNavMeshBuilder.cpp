@@ -292,6 +292,7 @@ bool dtCreateNavMeshData(dtNavMeshCreateParams* params, unsigned char** outData,
 	
 	// Classify off-mesh connection points. We store only the connections
 	// whose start point is inside the tile.
+	// off-mesh 分类，只有左端点在tile内的才存在当前tile 
 	unsigned char* offMeshConClass = 0;
 	int storedOffMeshConCount = 0;
 	int offMeshConLinkCount = 0;
@@ -363,6 +364,7 @@ bool dtCreateNavMeshData(dtNavMeshCreateParams* params, unsigned char** outData,
 	const int totVertCount = params->vertCount + storedOffMeshConCount*2;
 	
 	// Find portal edges which are at tile borders.
+	// 找到poly 边和tile边
 	int edgeCount = 0;
 	int portalCount = 0;
 	for (int i = 0; i < params->polyCount; ++i)
@@ -385,6 +387,7 @@ bool dtCreateNavMeshData(dtNavMeshCreateParams* params, unsigned char** outData,
 	const int maxLinkCount = edgeCount + portalCount*2 + offMeshConLinkCount*2;
 	
 	// Find unique detail vertices.
+	// detail 点重复，只记录多余的
 	int uniqueDetailVertCount = 0;
 	int detailTriCount = 0;
 	if (params->detailMeshes)
@@ -487,6 +490,7 @@ bool dtCreateNavMeshData(dtNavMeshCreateParams* params, unsigned char** outData,
 	
 	// Store vertices
 	// Mesh vertices
+	// 记录顶点，绝对坐标
 	for (int i = 0; i < params->vertCount; ++i)
 	{
 		const unsigned short* iv = &params->verts[i*3];
@@ -512,6 +516,7 @@ bool dtCreateNavMeshData(dtNavMeshCreateParams* params, unsigned char** outData,
 	
 	// Store polygons
 	// Mesh polys
+	// 记录poly
 	const unsigned short* src = params->polys;
 	for (int i = 0; i < params->polyCount; ++i)
 	{
@@ -542,7 +547,7 @@ bool dtCreateNavMeshData(dtNavMeshCreateParams* params, unsigned char** outData,
 			else
 			{
 				// Normal connection
-				p->neis[j] = src[nvp+j]+1;
+				p->neis[j] = src[nvp+j]+1;  // 这里为啥要+1？
 			}
 			
 			p->vertCount++;
@@ -550,6 +555,7 @@ bool dtCreateNavMeshData(dtNavMeshCreateParams* params, unsigned char** outData,
 		src += nvp*2;
 	}
 	// Off-mesh connection vertices.
+	// 记录off-mesh poly
 	n = 0;
 	for (int i = 0; i < params->offMeshConCount; ++i)
 	{
@@ -567,6 +573,7 @@ bool dtCreateNavMeshData(dtNavMeshCreateParams* params, unsigned char** outData,
 		}
 	}
 
+	// 记录detail 多余的点，内部三角形
 	// Store detail meshes and vertices.
 	// The nav polygon vertices are stored as the first vertices on each mesh.
 	// We compress the mesh data by skipping them and using the navmesh coordinates.
