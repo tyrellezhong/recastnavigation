@@ -1208,6 +1208,7 @@ bool rcBuildPolyMeshDetail(rcContext* ctx, const rcPolyMesh& mesh, const rcCompa
 	}
 	
 	// Find max size for a polygon area.
+	// 记录每个poly的包围盒，并找出最大的包围盒
 	for (int i = 0; i < mesh.npolys; ++i)
 	{
 		const unsigned short* p = &mesh.polys[i*nvp*2];
@@ -1244,7 +1245,7 @@ bool rcBuildPolyMeshDetail(rcContext* ctx, const rcPolyMesh& mesh, const rcCompa
 		ctx->log(RC_LOG_ERROR, "rcBuildPolyMeshDetail: Out of memory 'hp.data' (%d).", maxhw*maxhh);
 		return false;
 	}
-	
+	// 一个poly对应一个detail poly
 	dmesh.nmeshes = mesh.npolys;
 	dmesh.nverts = 0;
 	dmesh.ntris = 0;
@@ -1324,13 +1325,14 @@ bool rcBuildPolyMeshDetail(rcContext* ctx, const rcPolyMesh& mesh, const rcCompa
 		
 		// Store detail submesh.
 		const int ntris = tris.size()/4;
-		
+		// 记录当前的detail poly 的起始点索引，点数量， 三角形起始索引，三角形数量
 		dmesh.meshes[i*4+0] = (unsigned int)dmesh.nverts;
 		dmesh.meshes[i*4+1] = (unsigned int)nverts;
 		dmesh.meshes[i*4+2] = (unsigned int)dmesh.ntris;
 		dmesh.meshes[i*4+3] = (unsigned int)ntris;
 		
 		// Store vertices, allocate more memory if necessary.
+		// 记录detail顶点，内存不够，自动扩容
 		if (dmesh.nverts+nverts > vcap)
 		{
 			while (dmesh.nverts+nverts > vcap)
@@ -1356,6 +1358,7 @@ bool rcBuildPolyMeshDetail(rcContext* ctx, const rcPolyMesh& mesh, const rcCompa
 		}
 		
 		// Store triangles, allocate more memory if necessary.
+		// 记录detail三角形，内存不够，自动扩容
 		if (dmesh.ntris+ntris > tcap)
 		{
 			while (dmesh.ntris+ntris > tcap)
@@ -1377,7 +1380,7 @@ bool rcBuildPolyMeshDetail(rcContext* ctx, const rcPolyMesh& mesh, const rcCompa
 			dmesh.tris[dmesh.ntris*4+0] = (unsigned char)t[0];
 			dmesh.tris[dmesh.ntris*4+1] = (unsigned char)t[1];
 			dmesh.tris[dmesh.ntris*4+2] = (unsigned char)t[2];
-			dmesh.tris[dmesh.ntris*4+3] = getTriFlags(&verts[t[0]*3], &verts[t[1]*3], &verts[t[2]*3], poly, npoly);
+			dmesh.tris[dmesh.ntris*4+3] = getTriFlags(&verts[t[0]*3], &verts[t[1]*3], &verts[t[2]*3], poly, npoly); // 记录三角形的边是否是poly的边界
 			dmesh.ntris++;
 		}
 	}
