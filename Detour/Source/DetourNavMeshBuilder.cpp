@@ -379,7 +379,7 @@ bool dtCreateNavMeshData(dtNavMeshCreateParams* params, unsigned char** outData,
 			{
 				unsigned short dir = p[nvp+j] & 0xf;
 				if (dir != 0xf)
-					portalCount++;
+					portalCount++; // 通向其他Tile
 			}
 		}
 	}
