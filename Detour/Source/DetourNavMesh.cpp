@@ -585,6 +585,7 @@ void dtNavMesh::baseOffMeshLinks(dtMeshTile* tile)
 		dtVcopy(v, nearestPt);
 
 		// Link off-mesh connection to target poly.
+		// off-mesh poly 连接 poly
 		unsigned int idx = allocLink(tile);
 		if (idx != DT_NULL_LINK)
 		{
@@ -599,6 +600,7 @@ void dtNavMesh::baseOffMeshLinks(dtMeshTile* tile)
 		}
 
 		// Start end-point is always connect back to off-mesh connection. 
+		// poly 连接 off-mesh
 		unsigned int tidx = allocLink(tile);
 		if (tidx != DT_NULL_LINK)
 		{
@@ -1011,10 +1013,13 @@ dtStatus dtNavMesh::addTile(unsigned char* data, int dataSize, int flags,
 	tile->dataSize = dataSize;
 	tile->flags = flags;
 
+	// link， poly的每条边连接的poly
 	connectIntLinks(tile);
 
 	// Base off-mesh connections to their starting polygons and connect connections inside the tile.
+	// off-mesh 左端点在当前tile的link
 	baseOffMeshLinks(tile);
+	// off-mesh 右端点在当前tile的link
 	connectExtOffMeshLinks(tile, tile, -1);
 
 	// Create connections with neighbour tiles.
@@ -1029,6 +1034,7 @@ dtStatus dtNavMesh::addTile(unsigned char* data, int dataSize, int flags,
 		if (neis[j] == tile)
 			continue;
 	
+		// tile之间的连接
 		connectExtLinks(tile, neis[j], -1);
 		connectExtLinks(neis[j], tile, -1);
 		connectExtOffMeshLinks(tile, neis[j], -1);
@@ -1041,6 +1047,7 @@ dtStatus dtNavMesh::addTile(unsigned char* data, int dataSize, int flags,
 		nneis = getNeighbourTilesAt(header->x, header->y, i, neis, MAX_NEIS);
 		for (int j = 0; j < nneis; ++j)
 		{
+			// tile之间的连接
 			connectExtLinks(tile, neis[j], i);
 			connectExtLinks(neis[j], tile, dtOppositeTile(i));
 			connectExtOffMeshLinks(tile, neis[j], i);

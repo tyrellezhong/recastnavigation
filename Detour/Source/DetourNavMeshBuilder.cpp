@@ -547,7 +547,7 @@ bool dtCreateNavMeshData(dtNavMeshCreateParams* params, unsigned char** outData,
 			else
 			{
 				// Normal connection
-				p->neis[j] = src[nvp+j]+1;  // 这里为啥要+1？
+				p->neis[j] = src[nvp+j]+1;  // 这里+1, addTile 时，构建link，会减1
 			}
 			
 			p->vertCount++;
